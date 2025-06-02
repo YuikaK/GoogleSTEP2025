@@ -28,7 +28,7 @@ def get_best(sorted_dictionary_words, letters): # すでにソートされた辞
             continue # 含まれていなかった場合次の単語へ
 
         word_counts = Counter(word)
-        if all(word_counts[c] <= letter_counts[c] for c in word_counts): # すべての文字cについて、word_counts[c] <= letter_counts[c] が成り立つ時
+        if all(word_counts[c] <= letter_counts[c] for c in word_counts): # すべての文字cについて、word_counts[c] <= letter_counts[c] が成り立つとき
             return calculate_score(word), word  # 最初に見つけた時点でreturn
 
     return 0, "" #作れる単語が見つからなかった場合
