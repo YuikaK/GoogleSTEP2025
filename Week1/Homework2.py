@@ -1,4 +1,8 @@
+import time
+start = time.perf_counter()
+
 SCORES = [1, 3, 2, 2, 1, 3, 3, 1, 1, 4, 4, 2, 2, 1, 1, 3, 4, 1, 1, 1, 2, 3, 3, 4, 3, 4]
+
 # score_checker.pyより
 def calculate_score(word): 
     score = 0
@@ -14,41 +18,49 @@ def read_words(filename): # ファイル読み込み　中身をリストとし�
             words.append(line)
     return words
 
-def is_anagram(word, letters): # 辞書の単語がランダムな文字列に含まれる文字だけで作れるか
-    letter_counts = {} # lettersにある文字とその数を記録するための辞書型　key:文字　value:回数
+def get_best(dictionary_words, letters): # 1番スコアの高いスコアと単語を返す関数
+    letter_counts = {}  # letters に含まれる文字の出現回数を記録
     for c in letters:
-        if c in letter_counts: #すでに文字が記録されているとき
-            letter_counts[c] += 1
+        if c in letter_counts:
+            letter_counts[c] += 1 #すでに文字が記録されているとき
         else: # 文字が初めて出たとき
             letter_counts[c] = 1
 
-    for c in word: 
-        if c not in letter_counts: # ランダムな文字列の文字に辞書の単語の文字が含まれていないとき
-            return False
-        if letter_counts[c] == 0: # 文字はあるが、使える回数が0回になっているとき
-            return False
-        letter_counts[c] -= 1 # ループごとにある文字の（使える）回数を1減らす
+    best_score = 0
+    best_word = ""
 
-    return True # 作れるならTrueを返す
+    for word in dictionary_words: #
+        word_counts = {} # dictionary_wordsに含まれる文字の出現回数を記録
+        for c in word:
+            if c in word_counts:
+                word_counts[c] += 1 #すでに文字が記録されているとき
+            else: # 文字が初めて出たとき
+                word_counts[c] = 1
+
+        can_make = True # word_counts が letter_counts で表せるか確認する
+        for c in word_counts:
+            if c not in letter_counts or word_counts[c] > letter_counts[c]:
+                can_make = False
+                break
+
+        if can_make:
+            score = calculate_score(word)
+            if score > best_score:
+                best_score = score
+                best_word = word
+
+    return best_score, best_word
 
 def main():
-   
     data_words = read_words("anagram/large.txt") # "anagram/large.txt" "anagram/medium.txt"
     dictionary_words = read_words("anagram/words.txt")
     output_file = "anagram/large_answer.txt" # "anagram/large_answer.txt" "anagram/medium_answer.txt"
 
     results = []
     for letters in data_words:
-        best_word = ""
-        best_score = 0
-        for word in dictionary_words:
-            if is_anagram(word, letters): # アナグラムが作れるとき
-                score = calculate_score(word)
-                if score > best_score: # scoreが今までの中で一番良いとき
-                    best_word = word
-                    best_score = score
+        score, best_word = get_best(dictionary_words, letters)
         results.append(best_word)
-
+    
     # 結果をファイルに出力
     with open(output_file, "w") as f:
         for word in results:
@@ -56,3 +68,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+end = time.perf_counter() #計測終了
+print('{:.2f}'.format(end-start))
