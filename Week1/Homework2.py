@@ -1,3 +1,4 @@
+from collections import Counter
 import time
 start = time.perf_counter()
 
@@ -18,47 +19,29 @@ def read_words(filename): # ファイル読み込み　中身をリストとし�
             words.append(line)
     return words
 
-def get_best(dictionary_words, letters): # 1番スコアの高いスコアと単語を返す関数
-    letter_counts = {}  # letters に含まれる文字の出現回数を記録
-    for c in letters:
-        if c in letter_counts:
-            letter_counts[c] += 1 #すでに文字が記録されているとき
-        else: # 文字が初めて出たとき
-            letter_counts[c] = 1
+def get_best(sorted_dictionary_words, letters): # すでにソートされた辞書とランダムな文字列を引数に持つ
+    letter_counts = Counter(letters) # Counterクラスを用いて文字の出現回数を記録する
+    letters_set = set(letters) # ランダムな文字列に含まれる文字の種類だけを取り出す
 
-    best_score = 0
-    best_word = ""
+    for word in sorted_dictionary_words: # スコアが高い順に並んでいるので早く見つかった単語がベストスコアな可能性が高い
+        if not set(word).issubset(letters_set): # set(word)：単語に含まれる文字の集合　issubset(letters_set)：すべての文字が入力文字に含まれているか
+            continue # 含まれていなかった場合次の単語へ
 
-    for word in dictionary_words: #
-        word_counts = {} # dictionary_wordsに含まれる文字の出現回数を記録
-        for c in word:
-            if c in word_counts:
-                word_counts[c] += 1 #すでに文字が記録されているとき
-            else: # 文字が初めて出たとき
-                word_counts[c] = 1
+        word_counts = Counter(word)
+        if all(word_counts[c] <= letter_counts[c] for c in word_counts): # すべての文字cについて、word_counts[c] <= letter_counts[c] が成り立つとき
+            return calculate_score(word), word  # 最初に見つけた時点でreturn
 
-        can_make = True # word_counts が letter_counts で表せるか確認する
-        for c in word_counts:
-            if c not in letter_counts or word_counts[c] > letter_counts[c]:
-                can_make = False
-                break
-
-        if can_make:
-            score = calculate_score(word)
-            if score > best_score:
-                best_score = score
-                best_word = word
-
-    return best_score, best_word
+    return 0, "" #作れる単語が見つからなかった場合
 
 def main():
     data_words = read_words("anagram/large.txt") # "anagram/large.txt" "anagram/medium.txt"
     dictionary_words = read_words("anagram/words.txt")
+    sorted_dictionary_words = sorted(dictionary_words, key=calculate_score, reverse=True)
     output_file = "anagram/large_answer.txt" # "anagram/large_answer.txt" "anagram/medium_answer.txt"
 
     results = []
     for letters in data_words:
-        score, best_word = get_best(dictionary_words, letters)
+        score, best_word = get_best(sorted_dictionary_words, letters)
         results.append(best_word)
     
     # 結果をファイルに出力
