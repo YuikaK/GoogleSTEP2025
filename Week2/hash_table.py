@@ -13,6 +13,7 @@ import random, sys, time
 #
 # |key|: string
 # Return value: a hash value
+"""
 def calculate_hash(key): # ハッシュ関数
     assert type(key) == str # デバッグ時に""keyが文字列であること""が期待通りに動作しているかチェックする Falseなら停止
     # Note: This is not a good hash function. Do you see why? → ハッシュ関数が衝突する可能性がある
@@ -20,6 +21,30 @@ def calculate_hash(key): # ハッシュ関数
     for i in key:
         hash += ord(i) # ord(i):文字"i"をUnicode値に変換
     return hash # keyとなる各文字のUnicode値の合計
+"""
+"""
+def calculate_hash(key): # ①execution_result.txt
+    assert type(key) == str
+    hash = 0 
+    mod = 2147483647
+    for i, c in enumerate(key): # 文字列の各文字cにインデックスiを付けて順番に処理する
+        hash = (hash + ord(c) * (i + 1)) % mod # 文字のコードに位置を掛ける
+    return hash
+"""
+
+def calculate_hash(key): # ②execution_result.txt
+    assert type(key) == str
+    hash = 0
+    p = 29 # 文字の位置ごとに重みをつけるための素数（テストケースが小文字だけなので26以上の最小の素数？）
+    mod = 2147483647 # 大きな素数
+    weight = 1 # 文字の位置による重み
+
+    for c in key:
+        hash = (hash + ord(c) * weight) % mod # 各文字のUnicode値に重みを掛けて元のhashを足して素数で割った余り
+        weight = (weight * p) % mod # 重みを更新する
+    return hash
+
+
 
 def next_prime(n): # nの次の素数を探す関数
         def is_prime(x): # 素数かどうかを判定する関数
