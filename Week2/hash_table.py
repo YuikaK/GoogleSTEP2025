@@ -1,4 +1,7 @@
 import random, sys, time
+start = time.perf_counter()
+
+# 実行結果をexecution_result.txtに記録した
 
 ###########################################################################
 #                                                                         #
@@ -31,7 +34,7 @@ def calculate_hash(key): # ①execution_result.txt
         hash = (hash + ord(c) * (i + 1)) % mod # 文字のコードに位置を掛ける
     return hash
 """
-
+""""
 def calculate_hash(key): # ②execution_result.txt
     assert type(key) == str
     hash = 0
@@ -43,10 +46,20 @@ def calculate_hash(key): # ②execution_result.txt
         hash = (hash + ord(c) * weight) % mod # 各文字のUnicode値に重みを掛けて元のhashを足して素数で割った余り
         weight = (weight * p) % mod # 重みを更新する
     return hash
+"""
+def calculate_hash(key): # ③execution_result.txt
+    assert type(key) == str
+    hash = 0
+    p = 128 # ASCCIIコードで表現できる最大の数
+    mod = 2147483647 # 大きな素数
 
+    for c in key:
+        hash = (hash * p + ord(c)) % mod # 元のhash値をp倍してUnicode値に足して素数で割った余り
+    return hash
 
 
 def next_prime(n): # nの次の素数を探す関数
+        print("next_prime called with n:", n, file=sys.stderr) # デバッグ用
         def is_prime(x): # 素数かどうかを判定する関数
             if x < 2:
                 return False
@@ -169,6 +182,7 @@ class HashTable: # ハッシュテーブルクラス
                 self.item_count >= self.bucket_size * 0.3)
 
     def rehash(self, new_bucket_size): # 再ハッシュ関数
+        print("rehash called with new_bucket_size:", new_bucket_size, file=sys.stderr)
         new_bucket_size = next_prime(new_bucket_size)  # 次の素数の大きさに調整
         new_buckets = [None] * new_bucket_size # 新しい素数の大きさでbucketsを初期化
 
@@ -285,3 +299,6 @@ def performance_test():
 if __name__ == "__main__":
     functional_test()
     performance_test()
+
+end = time.perf_counter() #計測終了
+print('{:.2f}'.format(end-start))
