@@ -13,6 +13,7 @@ import random, sys, time
 #
 # |key|: string
 # Return value: a hash value
+"""
 def calculate_hash(key): # ハッシュ関数
     assert type(key) == str # デバッグ時に""keyが文字列であること""が期待通りに動作しているかチェックする Falseなら停止
     # Note: This is not a good hash function. Do you see why? → ハッシュ関数が衝突する可能性がある
@@ -20,7 +21,44 @@ def calculate_hash(key): # ハッシュ関数
     for i in key:
         hash += ord(i) # ord(i):文字"i"をUnicode値に変換
     return hash # keyとなる各文字のUnicode値の合計
+"""
+"""
+def calculate_hash(key): # ①execution_result.txt
+    assert type(key) == str
+    hash = 0 
+    mod = 2147483647
+    for i, c in enumerate(key): # 文字列の各文字cにインデックスiを付けて順番に処理する
+        hash = (hash + ord(c) * (i + 1)) % mod # 文字のコードに位置を掛ける
+    return hash
+"""
 
+def calculate_hash(key): # ②execution_result.txt
+    assert type(key) == str
+    hash = 0
+    p = 29 # 文字の位置ごとに重みをつけるための素数（テストケースが小文字だけなので26以上の最小の素数？）
+    mod = 2147483647 # 大きな素数
+    weight = 1 # 文字の位置による重み
+
+    for c in key:
+        hash = (hash + ord(c) * weight) % mod # 各文字のUnicode値に重みを掛けて元のhashを足して素数で割った余り
+        weight = (weight * p) % mod # 重みを更新する
+    return hash
+
+
+
+def next_prime(n): # nの次の素数を探す関数
+        def is_prime(x): # 素数かどうかを判定する関数
+            if x < 2:
+                return False
+            for i in range(2, int(x ** 0.5) + 1): # 2以上√x以下の整数(素数ではない場合、2から√xまでの間に必ず約数が存在するため)
+                if x % i == 0: # 割り切れたとき
+                    return False
+            return True # 素数だったとき
+
+        while True:
+            if is_prime(n): # 素数だったとき
+                return n
+            n += 1
 
 # An item object that represents one key - value pair in the hash table.
 class Item: # 連結リストのノード　Itemクラス
@@ -45,7 +83,7 @@ class Item: # 連結リストのノード　Itemクラス
 class HashTable: # ハッシュテーブルクラス
 
     # Initialize the hash table.
-    def __init__(self):
+    def __init__(self): # コンストラクタ　インスタンスが作られたときに一度だけ実行される
         # Set the initial bucket size to 97. A prime number is chosen to reduce
         # hash conflicts.
         self.bucket_size = 97
@@ -72,6 +110,8 @@ class HashTable: # ハッシュテーブルクラス
         new_item = Item(key, value, self.buckets[bucket_index]) # 新しいItemを作成する
         self.buckets[bucket_index] = new_item # bucketsの(buckets_index-1)番目の要素をnew_itemに更新する
         self.item_count += 1 # 登録されたアイテム数を1増やす
+        if self.item_count > self.bucket_size * 0.7: # 要素数がbucket_sizeの70%を上回ったら
+            self.rehash(self.bucket_size * 2) # テーブルサイズを2倍に
         return True # 新規追加なのでTrueを返す
 
     # Get an item from the hash table.
@@ -95,9 +135,9 @@ class HashTable: # ハッシュテーブルクラス
     # |key|: The key.
     # Return value: True if the item is found and deleted successfully. False
     #               otherwise.
-    def delete(self, key):
+    def delete(self, key): # ハッシュテーブルから要素を削除する関数
         assert type(key) == str
-        self.check_size()
+        self.check_size() # Note: Don't remove this code.
         bucket_index = calculate_hash(key) % self.bucket_size
         item = self.buckets[bucket_index]
         prev = None # 1つ前のノードを記録するための変数
@@ -108,6 +148,8 @@ class HashTable: # ハッシュテーブルクラス
                 else: # 先頭以外だった場合
                     prev.next = item.next # 途中のノードを削除
                 self.item_count -= 1
+                if self.bucket_size > 97 and self.item_count < self.bucket_size * 0.3: # 要素数が97以上かつbucket_sizeの30%を下回ったら
+                    self.rehash(max(97, self.bucket_size // 2)) # テーブルサイズを半分にする 97より小さくならないようにする
                 return True # 削除したのでTrueを返す
             prev = item # 現在のノードをprevにする
             item = item.next
@@ -115,17 +157,30 @@ class HashTable: # ハッシュテーブルクラス
 
     # Return the total number of items in the hash table.
     def size(self):
-        return self.item_count # 格納した要素数を返す
+        return self.item_count # 格納してある要素数を返す
 
     # Check that the hash table has a "reasonable" bucket size.
     # The bucket size is judged "reasonable" if it is smaller than 100 or
     # the buckets are 30% or more used.
     #
     # Note: Don't change this function.
-    def check_size(self):
+    def check_size(self): # ハッシュテーブルのサイズと要素数のバランスが適切か否か
         assert (self.bucket_size < 100 or
                 self.item_count >= self.bucket_size * 0.3)
 
+    def rehash(self, new_bucket_size): # 再ハッシュ関数
+        new_bucket_size = next_prime(new_bucket_size)  # 次の素数の大きさに調整
+        new_buckets = [None] * new_bucket_size # 新しい素数の大きさでbucketsを初期化
+
+        for old_item in self.buckets: # 今のbucketsの中を見る
+            while old_item:
+                new_index = calculate_hash(old_item.key) % new_bucket_size # ハッシュ値の再計算（新バケットサイズで）
+                new_item = Item(old_item.key, old_item.value, new_buckets[new_index]) # 新しいItemを先頭に追加していく
+                new_buckets[new_index] = new_item
+                old_item = old_item.next
+
+        self.buckets = new_buckets # bucketsを新しいものに更新
+        self.bucket_size = new_bucket_size # サイズも更新
 
 # Test the functional behavior of the hash table.
 def functional_test():
