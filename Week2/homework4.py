@@ -3,51 +3,7 @@ start = time.perf_counter()
 
 # 実行結果をexecution_result.txtに記録した
 
-###########################################################################
-#                                                                         #
-# Implement a hash table from scratch! (⑅•ᴗ•⑅)                            #
-#                                                                         #
-# Please do not use Python's dictionary or Python's collections library.  #
-# The goal is to implement the data structure yourself.                   #
-#                                                                         #
-###########################################################################
-
-# Hash function.
-#
-# |key|: string
-# Return value: a hash value
-"""
-def calculate_hash(key): # ハッシュ関数
-    assert type(key) == str # デバッグ時に""keyが文字列であること""が期待通りに動作しているかチェックする Falseなら停止
-    # Note: This is not a good hash function. Do you see why? → ハッシュ関数が衝突する可能性がある
-    hash = 0
-    for i in key:
-        hash += ord(i) # ord(i):文字"i"をUnicode値に変換
-    return hash # keyとなる各文字のUnicode値の合計
-"""
-"""
-def calculate_hash(key): # ①execution_result.txt
-    assert type(key) == str
-    hash = 0 
-    mod = 2147483647
-    for i, c in enumerate(key): # 文字列の各文字cにインデックスiを付けて順番に処理する
-        hash = (hash + ord(c) * (i + 1)) % mod # 文字のコードに位置を掛ける
-    return hash
-"""
-""""
-def calculate_hash(key): # ②execution_result.txt
-    assert type(key) == str
-    hash = 0
-    p = 29 # 文字の位置ごとに重みをつけるための素数（テストケースが小文字だけなので26以上の最小の素数？）
-    mod = 2147483647 # 大きな素数
-    weight = 1 # 文字の位置による重み
-
-    for c in key:
-        hash = (hash + ord(c) * weight) % mod # 各文字のUnicode値に重みを掛けて元のhashを足して素数で割った余り
-        weight = (weight * p) % mod # 重みを更新する
-    return hash
-"""
-def calculate_hash(key): # ③execution_result.txt
+def calculate_hash(key): 
     assert type(key) == str
     hash = 0
     p = 128 # ASCCIIコードで表現できる最大の数
@@ -56,7 +12,6 @@ def calculate_hash(key): # ③execution_result.txt
     for c in key:
         hash = (hash * p + ord(c)) % mod # 元のhash値をp倍してUnicode値に足して素数で割った余り
     return hash
-
 
 def next_prime(n): # nの次の素数を探す関数
         print("next_prime called with n:", n, file=sys.stderr) # デバッグ用
@@ -73,26 +28,13 @@ def next_prime(n): # nの次の素数を探す関数
                 return n
             n += 1
 
-# An item object that represents one key - value pair in the hash table.
 class Item: # 連結リストのノード　Itemクラス
-    # |key|: The key of the item. The key must be a string.
-    # |value|: The value of the item.
-    # |next|: The next item in the linked list. If this is the last item in the
-    #         linked list, |next| is None.
     def __init__(self, key, value, next):
         assert type(key) == str
         self.key = key
         self.value = value
         self.next = next
 
-
-# The main data structure of the hash table that stores key - value pairs.
-# The key must be a string. The value can be any type.
-#
-# |self.bucket_size|: The bucket size.
-# |self.buckets|: An array of the buckets. self.buckets[hash % self.bucket_size]
-#                 stores a linked list of items whose hash value is |hash|.
-# |self.item_count|: The total number of items in the hash table.
 class HashTable: # ハッシュテーブルクラス
 
     # Initialize the hash table.
@@ -103,13 +45,6 @@ class HashTable: # ハッシュテーブルクラス
         self.buckets = [None] * self.bucket_size # bucketsを初期化
         self.item_count = 0 # 要素数
 
-    # Put an item to the hash table. If the key already exists, the
-    # corresponding value is updated to a new value.
-    #
-    # |key|: The key of the item.
-    # |value|: The value of the item.
-    # Return value: True if a new item is added. False if the key already exists
-    #               and the value is updated.
     def put(self, key, value): # ハッシュテーブルに新しい要素を追加したか、既存のキーの値を更新したかを確認する関数
         assert type(key) == str
         self.check_size() # Note: Don't remove this code.
@@ -127,11 +62,6 @@ class HashTable: # ハッシュテーブルクラス
             self.rehash(self.bucket_size * 2) # テーブルサイズを2倍に
         return True # 新規追加なのでTrueを返す
 
-    # Get an item from the hash table.
-    #
-    # |key|: The key.
-    # Return value: If the item is found, (the value of the item, True) is
-    #               returned. Otherwise, (None, False) is returned.
     def get(self, key): # ハッシュテーブルから要素を取得する関数
         assert type(key) == str
         self.check_size() # Note: Don't remove this code.
@@ -143,11 +73,6 @@ class HashTable: # ハッシュテーブルクラス
             item = item.next # 見つからなければ次のノードに移動
         return (None, False) # 見つからなければ(None, False)
 
-    # Delete an item from the hash table.
-    #
-    # |key|: The key.
-    # Return value: True if the item is found and deleted successfully. False
-    #               otherwise.
     def delete(self, key): # ハッシュテーブルから要素を削除する関数
         assert type(key) == str
         self.check_size() # Note: Don't remove this code.
@@ -168,15 +93,9 @@ class HashTable: # ハッシュテーブルクラス
             item = item.next
         return False # 削除していないのでFalseを返す
 
-    # Return the total number of items in the hash table.
     def size(self):
         return self.item_count # 格納してある要素数を返す
 
-    # Check that the hash table has a "reasonable" bucket size.
-    # The bucket size is judged "reasonable" if it is smaller than 100 or
-    # the buckets are 30% or more used.
-    #
-    # Note: Don't change this function.
     def check_size(self): # ハッシュテーブルのサイズと要素数のバランスが適切か否か
         assert (self.bucket_size < 100 or
                 self.item_count >= self.bucket_size * 0.3)
@@ -261,15 +180,6 @@ def functional_test():
     assert hash_table.size() == 0
     print("Functional tests passed!")
 
-
-# Test the performance of the hash table.
-#
-# Your goal is to make the hash table work with mostly O(1).
-# If the hash table works with mostly O(1), the execution time of each iteration
-# should not depend on the number of items in the hash table. To achieve the
-# goal, you will need to 1) implement rehashing (Hint: expand / shrink the hash
-# table when the number of items in the hash table hits some threshold) and
-# 2) tweak the hash function (Hint: think about ways to reduce hash conflicts).
 def performance_test():
     hash_table = HashTable()
 
