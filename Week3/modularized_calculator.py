@@ -40,6 +40,17 @@ def read_rightparenthesis(line, index): # ')'を読み取る関数
     token = {'type': 'RIGHTPARENTHESIS'}
     return token, index + 1
 
+def read_abs(line, index): # 'abs'を読み取る関数
+    token = {'type': 'ABS'}
+    return token, index + 3
+
+def read_int(line, index): # 整数を読み取る関数
+    token = {'type': 'INT'}
+    return token, index + 3
+
+def read_round(line, index): # 'round'(四捨五入)を読み取る関数
+    token = {'type': 'ROUND'}
+    return token, index + 5
 
 def tokenize(line): # トークン化するための関数
     tokens = []
@@ -59,6 +70,12 @@ def tokenize(line): # トークン化するための関数
             (token, index) = read_leftparenthesis(line, index) # '('を読み取る
         elif line[index] == ')':
             (token, index) = read_rightparenthesis(line, index) # ')'を読み取る
+        elif line[index:index+3] == 'abs':
+            (token, index) = read_abs(line, index) # 'abs'を読み取る
+        elif line[index:index+3] == 'int':
+            (token, index) = read_int(line, index) # 'int'を読み取る
+        elif line[index:index+5] == 'round':
+            (token, index) = read_round(line, index) # 'round'を読み取る
         elif line[index] == ' ': # スペースは無視する
             index += 1
         else:
@@ -142,7 +159,103 @@ def evaluate_parentheses(tokens): # 括弧を含む式を評価する関数
         index += 1
     return new_tokens 
 
+def evaluate_abs(tokens): # 絶対値を評価する関数
+    new_tokens = []
+    index = 0
+    while index < len(tokens):
+        if tokens[index]['type'] == 'ABS': # 'abs'を読み取った場合
+            if index + 1 < len(tokens) and tokens[index + 1]['type'] == 'LEFTPARENTHESIS': # '('が続く場合
+                depth = 1
+                subexpr = []
+                index += 2
+                while index < len(tokens) and depth > 0:
+                    if tokens[index]['type'] == 'LEFTPARENTHESIS':
+                        depth += 1
+                    elif tokens[index]['type'] == 'RIGHTPARENTHESIS':
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    subexpr.append(tokens[index])
+                    index += 1
+                if depth != 0:
+                    print('Mismatched parentheses in abs')
+                    exit(1)
+                value = evaluate(subexpr)
+                new_tokens.append({'type': 'NUMBER', 'number': abs(value)}) # 絶対値を計算して追加
+            else:
+                print('Invalid syntax after abs')
+                exit(1)
+        else:
+            new_tokens.append(tokens[index]) # その他のトークンはそのまま追加
+        index += 1
+    return new_tokens
+
+def evaluate_int(tokens): # 整数化を評価する関数
+    new_tokens = []
+    index = 0
+    while index < len(tokens):
+        if tokens[index]['type'] == 'INT': # 'int'を読み取った場合
+            if index + 1 < len(tokens) and tokens[index + 1]['type'] == 'LEFTPARENTHESIS': # '('が続く場合
+                depth = 1
+                subexpr = []
+                index += 2
+                while index < len(tokens) and depth > 0:
+                    if tokens[index]['type'] == 'LEFTPARENTHESIS':
+                        depth += 1
+                    elif tokens[index]['type'] == 'RIGHTPARENTHESIS':
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    subexpr.append(tokens[index])
+                    index += 1
+                if depth != 0:
+                    print('Mismatched parentheses in int')
+                    exit(1)
+                value = evaluate(subexpr)
+                new_tokens.append({'type': 'NUMBER', 'number': int(value)}) # 整数化して追加
+            else:
+                print('Invalid syntax after int')
+                exit(1)
+        else:
+            new_tokens.append(tokens[index]) # その他のトークンはそのまま追加
+        index += 1
+    return new_tokens
+
+def evaluate_round(tokens): # 四捨五入を評価する関数
+    new_tokens = []
+    index = 0
+    while index < len(tokens):
+        if tokens[index]['type'] == 'ROUND': # 'round'を読み取った場合
+            if index + 1 < len(tokens) and tokens[index + 1]['type'] == 'LEFTPARENTHESIS': # '('が続く場合
+                depth = 1
+                subexpr = []
+                index += 2
+                while index < len(tokens) and depth > 0:
+                    if tokens[index]['type'] == 'LEFTPARENTHESIS':
+                        depth += 1
+                    elif tokens[index]['type'] == 'RIGHTPARENTHESIS':
+                        depth -= 1
+                        if depth == 0:
+                            break
+                    subexpr.append(tokens[index])
+                    index += 1
+                if depth != 0:
+                    print('Mismatched parentheses in round')
+                    exit(1)
+                value = evaluate(subexpr)
+                new_tokens.append({'type': 'NUMBER', 'number': round(value)}) # 四捨五入して追加
+            else:
+                print('Invalid syntax after round')
+                exit(1)
+        else:
+            new_tokens.append(tokens[index]) # その他のトークンはそのまま追加
+        index += 1
+    return new_tokens
+
 def evaluate(tokens):
+    tokens = evaluate_abs(tokens) # 絶対値を評価
+    tokens = evaluate_int(tokens) # 整数化を評価
+    tokens = evaluate_round(tokens) # 四捨五入を評価
     tokens = evaluate_parentheses(tokens) # 括弧を含む式を評価
     tokens = evaluate_muldiv(tokens) # 掛け算と割り算を評価
     answer = evaluate_plusminus(tokens) # 足し算と引き算を評価
@@ -170,6 +283,7 @@ def run_test():
     test("(1+2)*(3+4)/(5-2)")
     test("1+2*(3-4/2+1+2*(3-4/2))")
     test("(3.0+4*(2-1))/5")
+    test("12+abs(int(round(-1.55)+abs(int(-2.3+4))))")
     print("==== Test finished! ====\n")
 
 run_test()
